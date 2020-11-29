@@ -15,6 +15,7 @@ from PIL import Image, ImageTk
 from matplotlib import pyplot as plt
 
 np.seterr(divide="ignore")
+os.chdir("C:/Users/TAKAHIRO/Pictures/PythonImages")
 
 # --------------------------------------------------
 # 画像 IMaGe:img
