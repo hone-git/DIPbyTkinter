@@ -4,8 +4,12 @@
 
 @Author: Hayashi-
 SpecialThanks: Sato kun
+
+* ファイルの書き込み場所は
+  C:/Users/****/Pictures/dipImage
 """
 import os
+from os.path import expanduser
 import cv2
 import numpy as np
 import tkinter as tk
@@ -15,20 +19,15 @@ from PIL import Image, ImageTk
 from matplotlib import pyplot as plt
 
 np.seterr(divide="ignore")
-os.chdir("C:/Users/TAKAHIRO/Pictures/PythonImages")
+dir = expanduser("~") + "/Pictures/dipImage"
+try:
+    os.chdir(dir)
+except FileNotFoundError:
+    os.mkdir(dir)
+    os.chdir(dir)
 
 # --------------------------------------------------
 # 画像 IMaGe:img
-
-img_src = cv2.imread("src.png", 0)
-
-wid = min(img_src.shape[0], img_src.shape[1])
-img_src = img_src[0:wid, 0:wid]
-size = img_src.shape
-
-cv2.imwrite("crn.png", img_src)
-
-center = wid//2
 imgs = []
 
 # --------------------------------------------------
@@ -269,6 +268,29 @@ def frequency_flt(flt_mtr):
     cnv_dst.grid()
     cnv_dst.create_image(0, 0, image=convert(spc_dst), anchor="nw")
 
+
+def FileSelect():
+    fTyp = [("", "*")]
+    iDir = os.path.abspath(os.path.dirname(__file__))
+    file = tkinter.filedialog.askopenfilename(filetypes=fTyp, initialdir=iDir)
+    global img_src, wid, size, center
+    img_src = cv2.imread(file, 0)
+    wid = min(img_src.shape[0], img_src.shape[1])
+    img_src = img_src[0:wid, 0:wid]
+    size = img_src.shape
+    cv2.imwrite("crn.png", img_src)
+    center = wid//2
+    WidgetSize(wid)
+
+def WidgetSize(wid):
+    cnv_img.configure(width=wid, height=wid)
+    frm_pxl.configure(width=wid//2, height=wid//2)
+    cnv_flt.configure(width=wid//2, height=wid//2)
+    frm_prm.configure(width=wid//2, height=wid//2)
+    cnv_spc.configure(width=wid//2, height=wid//2)
+    frm_dst.configure(width=wid//2, height=wid//2)
+    cnv_dst.configure(width=wid//2, height=wid//2)
+
 # --------------------------------------------------
 # ボタン関数
 
@@ -298,20 +320,7 @@ def pointer(event):
 
 
 def select(event):
-    fTyp = [("", "*")]
-    iDir = os.path.abspath(os.path.dirname(__file__))
-    file = tkinter.filedialog.askopenfilename(filetypes=fTyp, initialdir=iDir)
-    global img_src, wid, size, center
-    img_src = cv2.imread(file, 0)
-    wid = min(img_src.shape[0], img_src.shape[1])
-    img_src = img_src[0:wid, 0:wid]
-    size = img_src.shape
-    cv2.imwrite("crn.png", img_src)
-    center = wid//2
-    cnv_img.configure(width=wid, height=wid)
-    cnv_spc.configure(width=wid//2, height=wid//2)
-    cnv_flt.configure(width=wid//2, height=wid//2)
-    cnv_dst.configure(width=wid//2, height=wid//2)
+    FileSelect()
     img_crn = cv2.imread("crn.png", 0)
     cnv_img.create_image(0, 0, image=convert(img_crn), anchor="nw")
 
@@ -366,9 +375,8 @@ root = tk.Tk()
 root.title("DigitalImageProcessing GUI")
 
 # Row=0
-cnv_img = tk.Canvas(root, width=wid, height=wid)
+cnv_img = tk.Canvas(root)
 cnv_img.grid(row=0, column=0, rowspan=6)
-cnv_img.create_image(0, 0, image=convert(img_src), anchor="nw")
 cnv_img.bind("<1>", pointer)
 cnv_img.bind("<3>", select)
 
@@ -376,7 +384,7 @@ btn_rst = tk.Button(root, text="Reset")
 btn_rst.grid(row=0, column=1, sticky=tk.W+tk.E)
 btn_rst.bind("<1>", reset)
 
-frm_pxl = tk.LabelFrame(root, text="Pixel Value 9*9", width=wid//2, height=wid//2)
+frm_pxl = tk.LabelFrame(root, text="Pixel Value 9*9")
 frm_pxl.grid(row=0, column=2, rowspan=3)
 frm_pxl.grid_propagate(False)
 frm_pxl.grid_remove()
@@ -386,11 +394,11 @@ for i in range(9):
     lbl_pxl.append(tk.Label(frm_pxl, text="0", width=11, height=4))
     lbl_pxl[i].grid(row=i//3, column=i%3)
 
-cnv_spc = tk.Canvas(root, width=wid//2, height=wid//2)
+cnv_spc = tk.Canvas(root)
 cnv_spc.grid(row=0, column=2, rowspan=3)
 cnv_spc.grid_remove()
 
-frm_flt = tk.LabelFrame(root, text="Selected Filter", width=wid//2, height=wid//2)
+frm_flt = tk.LabelFrame(root, text="Selected Filter")
 frm_flt.grid(row=0, column=3, rowspan=3)
 frm_flt.grid_propagate(False)
 frm_flt.grid_remove()
@@ -400,7 +408,7 @@ for i in range(9):
     lbl_flt.append(tk.Label(frm_flt, text="0", width=11, height=4))
     lbl_flt[i].grid(row=i//3, column=i%3)
 
-cnv_flt = tk.Canvas(root, width=wid//2, height=wid//2)
+cnv_flt = tk.Canvas(root)
 cnv_flt.grid(row=0, column=3, rowspan=3)
 cnv_flt.grid_remove()
 
@@ -419,7 +427,7 @@ cmb_flt = ttk.Combobox(root, state="readonly", values=flt_txt)
 cmb_flt.grid(row=3, column=1, sticky=tk.W+tk.E)
 cmb_flt.set(flt_txt[0])
 
-frm_prm = tk.LabelFrame(root, text="Filter Parameter", width=wid//2, height=wid//2)
+frm_prm = tk.LabelFrame(root, text="Filter Parameter")
 frm_prm.grid(row=3, column=2, rowspan=3)
 frm_prm.grid_propagate(False)
 frm_prm.grid_remove()
@@ -438,7 +446,7 @@ scl_r = tk.Scale(frm_prm, orient="horizontal", from_=0, to=255, length=230)
 scl_r.grid(row=1, column=1, sticky=tk.E)
 scl_r.set(25)
 
-frm_dst = tk.LabelFrame(root, text="Filtered Pixel Value 9*9", width=wid//2, height=wid//2)
+frm_dst = tk.LabelFrame(root, text="Filtered Pixel Value 9*9")
 frm_dst.grid(row=3, column=3, rowspan=3)
 frm_dst.grid_propagate(False)
 frm_dst.grid_remove()
@@ -448,7 +456,7 @@ for i in range(9):
     lbl_dst.append(tk.Label(frm_dst, text="0", width=11, height=4))
     lbl_dst[i].grid(row=i//3, column=i%3)
 
-cnv_dst = tk.Canvas(root, width=wid//2, height=wid//2)
+cnv_dst = tk.Canvas(root)
 cnv_dst.grid(row=3, column=3, rowspan=3)
 cnv_dst.grid_remove()
 
@@ -461,5 +469,10 @@ btn_flt.bind("<1>", filtering)
 btn_fourier = tk.Button(root, text="Fourier Transform")
 btn_fourier.grid(row=5, column=1, sticky=tk.W+tk.E)
 btn_fourier.bind("<1>", fourier)
+
+# --------------------------------------------------
+# main
+FileSelect()
+cnv_img.create_image(0, 0, image=convert(img_src), anchor="nw")
 
 root.mainloop()
