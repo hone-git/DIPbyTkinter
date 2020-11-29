@@ -5,7 +5,7 @@
 @Author: Hayashi-
 SpecialThanks: Sato kun
 
-* ファイルの書き込み場所は
+! ファイルの書き込み場所は
   C:/Users/****/Pictures/dipImage
 """
 import os
@@ -279,12 +279,14 @@ def FileSelect():
     img_src = img_src[0:wid, 0:wid]
     size = img_src.shape
     cv2.imwrite("crn.png", img_src)
+    cv2.imwrite("src.png", img_src)
     center = wid//2
     WidgetSize(wid)
 
 def WidgetSize(wid):
     cnv_img.configure(width=wid, height=wid)
     frm_pxl.configure(width=wid//2, height=wid//2)
+    frm_flt.configure(width=wid//2, height=wid//2)
     cnv_flt.configure(width=wid//2, height=wid//2)
     frm_prm.configure(width=wid//2, height=wid//2)
     cnv_spc.configure(width=wid//2, height=wid//2)
