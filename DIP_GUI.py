@@ -1,10 +1,5 @@
 # cording: utf-8
 """
-ディジタル画像処理GUI
-
-@Author: Hayashi-
-SpecialThanks: Sato kun
-
 ! ファイルの書き込み場所は
   C:/Users/****/Pictures/dipImage
 """
@@ -19,6 +14,14 @@ from PIL import Image, ImageTk
 from matplotlib import pyplot as plt
 
 np.seterr(divide="ignore")
+
+plt.rcParams["xtick.major.bottom"] = False
+plt.rcParams["ytick.major.left"] = False
+plt.rcParams["figure.subplot.left"] = 0
+plt.rcParams["figure.subplot.bottom"] = 0
+plt.rcParams["figure.subplot.right"] = 1
+plt.rcParams["figure.subplot.top"] = 1
+
 dir = expanduser("~") + "/Pictures/dipImage"
 try:
     os.chdir(dir)
@@ -34,8 +37,7 @@ imgs = []
 # Shading
 
 shd_txt = ["LineToneCurve", "GammaToneCurve", "SToneCurveSin",
-           "NegPosInversion", "Solarization", "Posterization",
-           "Binarization"]
+           "NegPosInversion", "Solarization", "Posterization","Binarization"]
 
 x = np.arange(256)
 
@@ -90,8 +92,9 @@ def Binarization():
 # フィルター　FiLTer:flt
 
 
-flt_txt = ["Averaging", "Gaussian", "Prewitt", "Sobel", "Laplacian",
-           "Sharpening", "LowPass", "HighPass", "BandPass", "HighEmphasis"]
+flt_txt = ["Averaging", "Gaussian", "Prewitt", "Sobel", "Laplacian", "Sharpening",
+           "LowPass", "HighPass", "BandPass", "HighEmphasis",
+           "GaussianLowPass", "GaussianHighPass", "GaussianHighEmphasis"]
 
 def Averaging():
     flt_ary = np.array([["1/9", "1/9", "1/9"],
@@ -168,6 +171,18 @@ def HighEmphasis():
                 flt_mtr[i][j] += 1
     frequency_flt(flt_mtr)
 
+def GaussianLowPass():
+    flt_mtr = Gaussian2D(wid)
+    frequency_flt(flt_mtr)
+
+def GaussianHighPass():
+    flt_mtr = Gaussian2D(wid)*(-1)+1
+    frequency_flt(flt_mtr)
+
+def GaussianHighEmphasis():
+    flt_mtr = Gaussian2D(wid)*(-1)+2
+    frequency_flt(flt_mtr)
+
 # --------------------------------------------------
 # 関数
 
@@ -179,119 +194,153 @@ def convert(img_gry):
     return img_tk
 
 
+def replace():
+    frame_process.grid()
+    img_src = cv2.imread("src.png")
+    img_dst = cv2.imread("dst.png")
+    img_operator = cv2.imread("operator.png")
+    img_src = cv2.resize(img_src, (wid//2, wid//2))
+    img_dst = cv2.resize(img_dst, (wid//2, wid//2))
+    img_operator = cv2.resize(img_operator, (wid//2, wid//2))
+    canvas_src.create_image(0, 0, image=convert(img_src), anchor="nw")
+    canvas_dst.create_image(0, 0, image=convert(img_dst), anchor="nw")
+    canvas_operator.create_image(0, 0, image=convert(img_operator), anchor="nw")
+
+
 def ShadingConversion(tcurve):
-    img_crn = cv2.imread("crn.png", 0)
-    img_dst = cv2.LUT(img_crn, tcurve)
-    cv2.imwrite("crn.png", img_dst)
+    img_src = cv2.imread("img.png", 0)
+    img_dst = cv2.LUT(img_src, tcurve)
+    cv2.imwrite("img.png", img_dst)
     cnv_img.create_image(0, 0, image=convert(img_dst), anchor="nw")
     plt.figure()
-    plt.subplots_adjust(left=0.14, right=0.9, bottom=0.14, top=0.91)
-    plt.hist(img_crn.flatten(), bins=x, color="black")
+    plt.hist(img_src.flatten(), bins=x, color="black")
     plt.xlim(0, 255)
-    plt.yticks([])
-    plt.savefig("crn_hst.png")
+    plt.savefig("src.png")
     plt.close()
-    hst_crn = cv2.imread("crn_hst.png")
-    hst_crn = cv2.resize(hst_crn, (wid//2, wid//2))
-    cnv_spc.grid()
-    cnv_spc.create_image(0, 0, image=convert(hst_crn), anchor="nw")
     plt.figure()
     plt.hist(img_dst.flatten(), bins=x, color="black")
-    plt.subplots_adjust(left=0.14, right=0.9, bottom=0.14, top=0.91)
     plt.xlim(0, 255)
-    plt.yticks([])
-    plt.savefig("dst_hst.png")
+    plt.savefig("dst.png")
     plt.close()
-    hst_dst = cv2.imread("dst_hst.png")
-    hst_dst = cv2.resize(hst_dst, (wid//2, wid//2))
-    cnv_dst.grid()
-    cnv_dst.create_image(0, 0, image=convert(hst_dst), anchor="nw")
     plt.figure()
     plt.subplots_adjust(left=0.14, right=0.9, bottom=0.14, top=0.91)
     plt.plot(x, tcurve, color="red")
     plt.xlim(0, 256)
     plt.ylim(0, 256)
-    plt.savefig("crv.png")
+    plt.savefig("operator.png")
     plt.close()
-    img_crv = cv2.imread("crv.png")
-    img_crv = cv2.resize(img_crv, (wid//2, wid//2))
-    cnv_flt.grid()
-    cnv_flt.create_image(0, 0, image=convert(img_crv), anchor="nw")
+    replace()
 
 
 def spatial_flt(flt_ary):
-    cnv_spc.grid_remove()
-    frm_pxl.grid()
-    frm_dst.grid()
+    fig,ax = plt.subplots()
+    ax.axis('off')
+    tb = ax.table(cellText=flt_ary, cellLoc="center", loc="center")
+    tb.auto_set_font_size(False)
+    cell_height = 1 / len(flt_ary)
+    for pos, cell in tb.get_celld().items():
+        cell.set_height(cell_height)
+    plt.savefig("operator.png")
+    plt.close()
     for i in range(9):
-        lbl_flt[i]["text"] = flt_ary[i//3][i%3]
         flt_ary[i//3][i%3] = eval(flt_ary[i//3][i%3])
     flt_ary = flt_ary.astype(np.float64)
-    frm_flt.grid()
-    img_crn = cv2.imread("crn.png", 0)
-    img_tmp = cv2.filter2D(img_crn, -1, flt_ary)
+    img_src = cv2.imread("img.png", 0)
+    img_tmp = cv2.filter2D(img_src, -1, flt_ary)
     img_dst = cv2.convertScaleAbs(img_tmp)
-    cv2.imwrite("crn.png", img_dst)
+    cv2.imwrite("img.png", img_dst)
     cnv_img.create_image(0, 0, image=convert(img_dst), anchor="nw")
+    cv2.imwrite("src.png", img_src)
+    cv2.imwrite("dst.png", img_dst)
+    PixelValue()
+    replace()
 
 
 def frequency_flt(flt_mtr):
-    plt.figure(dpi=1, figsize=(wid//2, wid//2))
-    plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    plt.imshow(flt_mtr, cmap="gray")
-    plt.xticks([])
-    plt.yticks([])
-    plt.savefig("flt.png")
-    plt.close()
-    img_flt = cv2.imread("flt.png", 0)
-    frm_prm.grid()
-    cnv_flt.grid()
-    cnv_flt.create_image(0, 0, image=convert(img_flt), anchor="nw")
-    img_crn = cv2.imread("crn.png", 0)
-    f = np.fft.fft2(img_crn)
+    cv2.imwrite("operator.png", flt_mtr*256)
+    img_src = cv2.imread("img.png", 0)
+    f = np.fft.fft2(img_src)
     fshift = np.fft.fftshift(f)
     ftmp = fshift * flt_mtr
     funshift = np.fft.fftshift(ftmp)
     img_dst = np.uint8(np.fft.ifft2(funshift).real)
-    cv2.imwrite("crn.png", img_dst)
+    cv2.imwrite("img.png", img_dst)
     cnv_img.create_image(0, 0, image=convert(img_dst), anchor="nw")
-    mag_spc = 20 * np.log(np.abs(ftmp))
-    mag_spc[np.isinf(mag_spc)] = 0
+    spc_src = 20 * np.log(np.abs(fshift))
+    spc_src[np.isinf(spc_src)] = 0
     plt.figure(dpi=1, figsize=(wid//2, wid//2))
-    plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    plt.imshow(mag_spc, cmap="gray")
-    plt.xticks([])
-    plt.yticks([])
+    plt.imshow(spc_src, cmap="gray")
+    plt.savefig("src.png")
+    plt.close()
+    spc_dst = 20 * np.log(np.abs(ftmp))
+    spc_dst[np.isinf(spc_dst)] = 0
+    plt.figure(dpi=1, figsize=(wid//2, wid//2))
+    plt.imshow(spc_dst, cmap="gray")
     plt.savefig("dst.png")
     plt.close()
-    spc_dst = cv2.imread("dst.png", 0)
-    cnv_dst.grid()
-    cnv_dst.create_image(0, 0, image=convert(spc_dst), anchor="nw")
+    replace()
 
 
 def FileSelect():
     fTyp = [("", "*")]
     iDir = os.path.abspath(os.path.dirname(__file__))
     file = tkinter.filedialog.askopenfilename(filetypes=fTyp, initialdir=iDir)
-    global img_src, wid, size, center
-    img_src = cv2.imread(file, 0)
-    wid = min(img_src.shape[0], img_src.shape[1])
-    img_src = img_src[0:wid, 0:wid]
-    size = img_src.shape
-    cv2.imwrite("crn.png", img_src)
-    cv2.imwrite("src.png", img_src)
+    global img_god, wid, size, center
+    img_god = cv2.imread(file, 0)
+    wid = min(img_god.shape[0], img_god.shape[1])
+    img_god = img_god[0:wid, 0:wid]
+    size = img_god.shape
+    cv2.imwrite("god.png", img_god)
+    cv2.imwrite("img.png", img_god)
     center = wid//2
     WidgetSize(wid)
 
+
 def WidgetSize(wid):
     cnv_img.configure(width=wid, height=wid)
-    frm_pxl.configure(width=wid//2, height=wid//2)
-    frm_flt.configure(width=wid//2, height=wid//2)
-    cnv_flt.configure(width=wid//2, height=wid//2)
-    frm_prm.configure(width=wid//2, height=wid//2)
-    cnv_spc.configure(width=wid//2, height=wid//2)
-    frm_dst.configure(width=wid//2, height=wid//2)
-    cnv_dst.configure(width=wid//2, height=wid//2)
+    frame_buttons.configure(width=120, height=wid)
+    canvas_src.configure(width=wid//2, height=wid//2)
+    canvas_dst.configure(width=wid//2, height=wid//2)
+    canvas_operator.configure(width=wid//2, height=wid//2)
+    frame_parameter.configure(width=wid//2, height=wid//2)
+
+def PixelValue(x=16, y=16):
+    img_src = cv2.imread("god.png", 0)
+    img_dst = cv2.imread("img.png", 0)
+    src = ([[img_src[x-1][y-1], img_src[x][y-1], img_src[x+1][y-1]],
+            [img_src[x-1][y  ], img_src[x][y  ], img_src[x+1][y  ]],
+            [img_src[x-1][y+1], img_src[x][y+1], img_src[x+1][y+1]]])
+    fig,ax = plt.subplots()
+    ax.axis('off')
+    tb = ax.table(cellText=src, cellLoc="center", loc="center")
+    tb.auto_set_font_size(False)
+    cell_height = 1 / len(src)
+    for pos, cell in tb.get_celld().items():
+        cell.set_height(cell_height)
+    plt.savefig("src.png")
+    plt.close()
+    dst = ([[img_dst[x-1][y-1], img_dst[x][y-1], img_dst[x+1][y-1]],
+            [img_dst[x-1][y  ], img_dst[x][y  ], img_dst[x+1][y  ]],
+            [img_dst[x-1][y+1], img_dst[x][y+1], img_dst[x+1][y+1]]])
+    fig,ax = plt.subplots()
+    ax.axis('off')
+    tb = ax.table(cellText=dst, cellLoc="center", loc="center")
+    tb.auto_set_font_size(False)
+    cell_height = 1 / len(dst)
+    for pos, cell in tb.get_celld().items():
+        cell.set_height(cell_height)
+    plt.savefig("dst.png")
+    plt.close()
+
+def Gaussian2D(width, sigma=4):
+    x = np.linspace(-15, 15, width)
+    y = np.linspace(-15, 15, width)
+    matrix = np.full((width, width), 0, dtype=np.float64)
+    for i in range(width):
+        for j in range(width):
+            matrix[i][j] = 1 / (2*np.pi*sigma**2)*np.exp(-1*(x[i]**2+y[j]**2)/(2*sigma**2))
+    matrix = np.clip(matrix/matrix[width//2][width//2], 0, 1)
+    return matrix
 
 # --------------------------------------------------
 # ボタン関数
@@ -300,62 +349,33 @@ def WidgetSize(wid):
 def pointer(event):
     px = event.x
     py = event.y
-    lbl_pxl[0]["text"] = img_src[px-1][py-1]
-    lbl_pxl[1]["text"] = img_src[px][py-1]
-    lbl_pxl[2]["text"] = img_src[px+1][py-1]
-    lbl_pxl[3]["text"] = img_src[px-1][py]
-    lbl_pxl[4]["text"] = img_src[px][py]
-    lbl_pxl[5]["text"] = img_src[px+1][py]
-    lbl_pxl[6]["text"] = img_src[px-1][py+1]
-    lbl_pxl[7]["text"] = img_src[px][py+1]
-    lbl_pxl[8]["text"] = img_src[px-1][py+1]
-    img_crn = cv2.imread("crn.png", 0)
-    lbl_dst[0]["text"] = img_crn[px-1][py-1]
-    lbl_dst[1]["text"] = img_crn[px][py-1]
-    lbl_dst[2]["text"] = img_crn[px+1][py-1]
-    lbl_dst[3]["text"] = img_crn[px-1][py]
-    lbl_dst[4]["text"] = img_crn[px][py]
-    lbl_dst[5]["text"] = img_crn[px+1][py]
-    lbl_dst[6]["text"] = img_crn[px-1][py+1]
-    lbl_dst[7]["text"] = img_crn[px][py+1]
-    lbl_dst[8]["text"] = img_crn[px-1][py+1]
+    PixelValue(px, py)
+    replace()
 
 
 def select(event):
     FileSelect()
-    img_crn = cv2.imread("crn.png", 0)
-    cnv_img.create_image(0, 0, image=convert(img_crn), anchor="nw")
+    img = cv2.imread("img.png", 0)
+    cnv_img.create_image(0, 0, image=convert(img), anchor="nw")
 
 
 def reset(event):
-    cv2.imwrite("crn.png", img_src)
-    img_crn = cv2.imread("crn.png", 0)
-    cnv_img.create_image(0, 0, image=convert(img_crn), anchor="nw")
+    cv2.imwrite("img.png", img_god)
+    img = cv2.imread("img.png", 0)
+    cnv_img.create_image(0, 0, image=convert(img), anchor="nw")
 
 
 def shading(event):
-    frm_pxl.grid_remove()
-    cnv_flt.grid_remove()
-    frm_prm.grid_remove()
-    frm_flt.grid_remove()
-    frm_dst.grid_remove()
-    cnv_dst.grid_remove()
     eval(cmb_shd.get())()
 
 
 def filtering(event):
-    frm_pxl.grid_remove()
-    cnv_flt.grid_remove()
-    frm_prm.grid_remove()
-    frm_flt.grid_remove()
-    frm_dst.grid_remove()
-    cnv_dst.grid_remove()
     eval(cmb_flt.get())()
 
 
 def fourier(event):
-    img_crn = cv2.imread("crn.png", 0)
-    f = np.fft.fft2(img_crn)
+    img = cv2.imread("img.png", 0)
+    f = np.fft.fft2(img)
     fshift = np.fft.fftshift(f)
     mag_spc = 20 * np.log(np.abs(fshift))
     plt.figure(dpi=1, figsize=(wid//2, wid//2))
@@ -363,11 +383,11 @@ def fourier(event):
     plt.imshow(mag_spc, cmap="gray")
     plt.xticks([])
     plt.yticks([])
-    plt.savefig("spc.png")
+    plt.savefig("src.png")
     plt.close()
-    img_spc = cv2.imread("spc.png", 0)
+    img_src = cv2.imread("src.png", 0)
     cnv_spc.grid()
-    cnv_spc.create_image(0, 0, image=convert(img_spc), anchor="nw")
+    cnv_spc.create_image(0, 0, image=convert(img_src), anchor="nw")
 
 
 # --------------------------------------------------
@@ -376,105 +396,75 @@ def fourier(event):
 root = tk.Tk()
 root.title("DigitalImageProcessing GUI")
 
-# Row=0
 cnv_img = tk.Canvas(root)
-cnv_img.grid(row=0, column=0, rowspan=6)
+cnv_img.grid(row=0, column=0)
 cnv_img.bind("<1>", pointer)
 cnv_img.bind("<3>", select)
 
-btn_rst = tk.Button(root, text="Reset")
-btn_rst.grid(row=0, column=1, sticky=tk.W+tk.E)
+# Processing Panel
+frame_buttons = tk.LabelFrame(root, text="Proccesing Panel")
+frame_buttons.grid(row=0, column=1)
+frame_buttons.grid_propagate(False)
+
+btn_rst = tk.Button(frame_buttons, text="Reset")
+btn_rst.grid(row=0, column=0, sticky=tk.E+tk.W)
 btn_rst.bind("<1>", reset)
 
-frm_pxl = tk.LabelFrame(root, text="Pixel Value 9*9")
-frm_pxl.grid(row=0, column=2, rowspan=3)
-frm_pxl.grid_propagate(False)
-frm_pxl.grid_remove()
-
-lbl_pxl = []
-for i in range(9):
-    lbl_pxl.append(tk.Label(frm_pxl, text="0", width=11, height=4))
-    lbl_pxl[i].grid(row=i//3, column=i%3)
-
-cnv_spc = tk.Canvas(root)
-cnv_spc.grid(row=0, column=2, rowspan=3)
-cnv_spc.grid_remove()
-
-frm_flt = tk.LabelFrame(root, text="Selected Filter")
-frm_flt.grid(row=0, column=3, rowspan=3)
-frm_flt.grid_propagate(False)
-frm_flt.grid_remove()
-
-lbl_flt = []
-for i in range(9):
-    lbl_flt.append(tk.Label(frm_flt, text="0", width=11, height=4))
-    lbl_flt[i].grid(row=i//3, column=i%3)
-
-cnv_flt = tk.Canvas(root)
-cnv_flt.grid(row=0, column=3, rowspan=3)
-cnv_flt.grid_remove()
-
-# Row=1
-cmb_shd = ttk.Combobox(root, state="readonly", values=shd_txt)
-cmb_shd.grid(row=1, column=1, sticky=tk.W+tk.E)
+cmb_shd = ttk.Combobox(frame_buttons, state="readonly", values=shd_txt)
+cmb_shd.grid(row=1, column=0, sticky=tk.E+tk.W)
 cmb_shd.set(shd_txt[0])
 
-# Row=2
-btn_shd = tk.Button(root, text="Shading Conversion")
-btn_shd.grid(row=2, column=1, sticky=tk.W+tk.E)
+btn_shd = tk.Button(frame_buttons, text="Shading Conversion")
+btn_shd.grid(row=2, column=0, sticky=tk.E+tk.W)
 btn_shd.bind("<1>", shading)
 
-# Row=3
-cmb_flt = ttk.Combobox(root, state="readonly", values=flt_txt)
-cmb_flt.grid(row=3, column=1, sticky=tk.W+tk.E)
+cmb_flt = ttk.Combobox(frame_buttons, state="readonly", values=flt_txt)
+cmb_flt.grid(row=3, column=0, sticky=tk.E+tk.W)
 cmb_flt.set(flt_txt[0])
 
-frm_prm = tk.LabelFrame(root, text="Filter Parameter")
-frm_prm.grid(row=3, column=2, rowspan=3)
-frm_prm.grid_propagate(False)
-frm_prm.grid_remove()
-
-lbl_R = tk.Label(frm_prm, text="R")
-lbl_R.grid(row=0, column=0)
-
-scl_R = tk.Scale(frm_prm, orient="horizontal", from_=0, to=255, length=230)
-scl_R.grid(row=0, column=1, sticky=tk.E)
-scl_R.set(50)
-
-lbl_r = tk.Label(frm_prm, text="r")
-lbl_r.grid(row=1, column=0)
-
-scl_r = tk.Scale(frm_prm, orient="horizontal", from_=0, to=255, length=230)
-scl_r.grid(row=1, column=1, sticky=tk.E)
-scl_r.set(25)
-
-frm_dst = tk.LabelFrame(root, text="Filtered Pixel Value 9*9")
-frm_dst.grid(row=3, column=3, rowspan=3)
-frm_dst.grid_propagate(False)
-frm_dst.grid_remove()
-
-lbl_dst = []
-for i in range(9):
-    lbl_dst.append(tk.Label(frm_dst, text="0", width=11, height=4))
-    lbl_dst[i].grid(row=i//3, column=i%3)
-
-cnv_dst = tk.Canvas(root)
-cnv_dst.grid(row=3, column=3, rowspan=3)
-cnv_dst.grid_remove()
-
-# Row=4
-btn_flt = tk.Button(root, text="Filtering")
-btn_flt.grid(row=4, column=1, sticky=tk.W+tk.E)
+btn_flt = tk.Button(frame_buttons, text="Filtering")
+btn_flt.grid(row=4, column=0, sticky=tk.E+tk.W)
 btn_flt.bind("<1>", filtering)
 
-# Row=5
-btn_fourier = tk.Button(root, text="Fourier Transform")
-btn_fourier.grid(row=5, column=1, sticky=tk.W+tk.E)
+btn_fourier = tk.Button(frame_buttons, text="Fourier Transform")
+btn_fourier.grid(row=5, column=0, sticky=tk.E+tk.W)
 btn_fourier.bind("<1>", fourier)
+
+for i, child in enumerate(frame_buttons.winfo_children()):
+    frame_buttons.grid_rowconfigure(i, weight=1)
+
+frame_buttons.grid_columnconfigure(0, weight=1)
+
+# Processing Detail
+frame_process = tk.LabelFrame(root, text="Processing Detail")
+frame_process.grid(row=0, column=5)
+frame_process.grid_remove()
+
+canvas_src = tk.Canvas(frame_process)
+canvas_src.grid(row=0, column=0)
+
+canvas_operator = tk.Canvas(frame_process)
+canvas_operator.grid(row=0, column=1)
+
+frame_parameter = tk.LabelFrame(frame_process, text="Proccesing Parameter")
+frame_parameter.grid(row=1, column=0)
+
+lbl_R = tk.Label(frame_parameter, text="R")
+
+scl_R = tk.Scale(frame_parameter, orient="horizontal", from_=0, to=255, length=230)
+scl_R.set(50)
+
+lbl_r = tk.Label(frame_parameter, text="r")
+
+scl_r = tk.Scale(frame_parameter, orient="horizontal", from_=0, to=255)
+scl_r.set(25)
+
+canvas_dst = tk.Canvas(frame_process)
+canvas_dst.grid(row=1, column=1)
 
 # --------------------------------------------------
 # main
 FileSelect()
-cnv_img.create_image(0, 0, image=convert(img_src), anchor="nw")
+cnv_img.create_image(0, 0, image=convert(img_god), anchor="nw")
 
 root.mainloop()
