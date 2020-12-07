@@ -95,7 +95,8 @@ def Binarization():
 
 flt_txt = ["Averaging", "Gaussian", "Prewitt", "Sobel", "Laplacian", "Sharpening",
            "LowPass", "HighPass", "BandPass", "HighEmphasis",
-           "GaussianLowPass", "GaussianHighPass", "GaussianHighEmphasis"]
+           "GaussianLowPass", "GaussianHighPass", "GaussianHighEmphasis",
+           "Resize"]
 
 def Averaging():
     flt_ary = np.array([["1/9", "1/9", "1/9"],
@@ -187,6 +188,25 @@ def GaussianHighEmphasis():
     flt_mtr = Gaussian2D(wid, sigma)*(-1)+2
     frequency_flt(flt_mtr)
 
+def Resize():
+    global wid, size, center
+    rate = scl_rate.get()
+    img_src = cv2.imread("img.png", 0)
+    f = np.fft.fft2(img_src)
+    fshift = np.fft.fftshift(f)
+    ftmp = np.full((int(wid*rate), int(wid*rate)), 0, dtype=np.complex128)
+    for i, I in enumerate(range(int(wid*(rate-1)//2), int(wid*(rate-1)//2)+wid)):
+        for j, J in enumerate(range(int(wid*(rate-1)//2), int(wid*(rate-1)//2+wid))):
+            ftmp[I][J] = fshift[i][j]
+    funshift = np.fft.fftshift(ftmp)
+    img_dst = np.uint8(np.fft.ifft2(funshift).real)
+    cv2.imwrite("img.png", img_dst)
+    wid = int(wid * rate)
+    size = img_dst.shape
+    center = wid*rate//2
+    WidgetSize(wid)
+    cnv_img.create_image(0, 0, image=convert(img_dst), anchor="nw")
+
 # --------------------------------------------------
 # グラフ描画
 def Histgram(input, output):
@@ -231,10 +251,8 @@ def Spectrum(input, output, isSpc=False):
         input = np.fft.fftshift(input)
     spc = 20 * np.log(np.abs(input))
     spc[np.isinf(spc)] = 0
-    plt.figure(dpi=1, figsize=(wid//2, wid//2))
-    plt.imshow(spc, cmap="gray")
-    plt.savefig(output+".png")
-    plt.close()
+    spc = spc / DC_amp * 256
+    cv2.imwrite(output+".png", spc)
 
 
 # --------------------------------------------------
@@ -262,18 +280,18 @@ def replace():
 
 
 def ShadingConversion(tcurve):
-    img_src = cv2.imread("img.png", 0)
-    img_dst = cv2.LUT(img_src, tcurve)
-    cv2.imwrite("img.png", img_dst)
-    cnv_img.create_image(0, 0, image=convert(img_dst), anchor="nw")
-    Histgram(img_src, "src")
-    Histgram(img_dst, "dst")
     plt.subplots_adjust(left=0.14, right=0.9, bottom=0.14, top=0.91)
     plt.plot(x, tcurve, color="red")
     plt.xlim(0, 256)
     plt.ylim(0, 256)
     plt.savefig("operator.png")
     plt.close()
+    img_src = cv2.imread("img.png", 0)
+    img_dst = cv2.LUT(img_src, tcurve)
+    cv2.imwrite("img.png", img_dst)
+    cnv_img.create_image(0, 0, image=convert(img_dst), anchor="nw")
+    Histgram(img_src, "src")
+    Histgram(img_dst, "dst")
     replace()
 
 
@@ -287,8 +305,6 @@ def spatial_flt(flt_ary):
     img_dst = cv2.convertScaleAbs(img_tmp)
     cv2.imwrite("img.png", img_dst)
     cnv_img.create_image(0, 0, image=convert(img_dst), anchor="nw")
-    cv2.imwrite("src.png", img_src)
-    cv2.imwrite("dst.png", img_dst)
     PixelValue()
     replace()
 
@@ -325,11 +341,14 @@ def FileSelect():
 
 def WidgetSize(wid):
     cnv_img.configure(width=wid, height=wid)
-    frame_buttons.configure(width=120, height=wid)
+    frame_buttons.configure(width=128, height=wid)
     canvas_src.configure(width=wid//2, height=wid//2)
     canvas_dst.configure(width=wid//2, height=wid//2)
     canvas_operator.configure(width=wid//2, height=wid//2)
     frame_parametor.configure(width=wid//2, height=wid//2)
+    canvas_hist.configure(width=wid//2, height=wid//2)
+    canvas_spec.configure(width=wid//2, height=wid//2)
+
 
 def PixelValue(x=16, y=16):
     img_src = cv2.imread("god.png", 0)
@@ -342,6 +361,7 @@ def PixelValue(x=16, y=16):
             [img_dst[x-1][y  ], img_dst[x][y  ], img_dst[x+1][y  ]],
             [img_dst[x-1][y+1], img_dst[x][y+1], img_dst[x+1][y+1]]])
     Table(dst, "dst")
+
 
 def Gaussian2D(width, sigma=4):
     x = np.linspace(-16, 16, width)
@@ -371,9 +391,15 @@ def select(event):
 
 
 def reset(event):
+    global img_god, wid, size, center
+    wid = min(img_god.shape[0], img_god.shape[1])
+    img_god = img_god[0:wid, 0:wid]
+    size = img_god.shape
+    cv2.imwrite("god.png", img_god)
     cv2.imwrite("img.png", img_god)
-    img = cv2.imread("img.png", 0)
-    cnv_img.create_image(0, 0, image=convert(img), anchor="nw")
+    center = wid//2
+    WidgetSize(wid)
+    cnv_img.create_image(0, 0, image=convert(img_god), anchor="nw")
 
 
 def shading(event):
@@ -384,10 +410,17 @@ def filtering(event):
     eval(cmb_flt.get())()
 
 
-def fourier(event):
+def Values(event):
+    frame_values.grid()
     img = cv2.imread("img.png", 0)
-    Spectrum(img, "src")
-    replace()
+    Histgram(img, "hist")
+    Spectrum(img, "spec")
+    img_hist = cv2.imread("hist.png")
+    img_spec = cv2.imread("spec.png")
+    img_hist = cv2.resize(img_hist, (wid//2, wid//2))
+    img_spec = cv2.resize(img_spec, (wid//2, wid//2))
+    canvas_hist.create_image(0, 0, image=convert(img_hist), anchor="nw")
+    canvas_spec.create_image(0, 0, image=convert(img_spec), anchor="nw")
 
 
 # --------------------------------------------------
@@ -426,9 +459,9 @@ btn_flt = tk.Button(frame_buttons, text="Filtering")
 btn_flt.grid(row=4, column=0, sticky=tk.E+tk.W)
 btn_flt.bind("<1>", filtering)
 
-btn_fourier = tk.Button(frame_buttons, text="Fourier Transform")
-btn_fourier.grid(row=5, column=0, sticky=tk.E+tk.W)
-btn_fourier.bind("<1>", fourier)
+btn_values = tk.Button(frame_buttons, text="Image Values")
+btn_values.grid(row=5, column=0, sticky=tk.E+tk.W)
+btn_values.bind("<1>", Values)
 
 for i, child in enumerate(frame_buttons.winfo_children()):
     frame_buttons.grid_rowconfigure(i, weight=1)
@@ -436,8 +469,8 @@ for i, child in enumerate(frame_buttons.winfo_children()):
 frame_buttons.grid_columnconfigure(0, weight=1)
 
 # Processing Detail
-frame_process = tk.LabelFrame(root, text="Processing Detail")
-frame_process.grid(row=0, column=5)
+frame_process = tk.LabelFrame(root, text="Proccesing Detail")
+frame_process.grid(row=0, column=2)
 frame_process.grid_remove()
 
 canvas_src = tk.Canvas(frame_process)
@@ -455,7 +488,7 @@ lbl_R.grid(row=0, column=0)
 
 scl_R = tk.Scale(frame_parametor, orient="horizontal", from_=0, to=255)
 scl_R.grid(row=0, column=1, sticky=tk.NSEW)
-scl_R.set(50)
+scl_R.set(75)
 
 lbl_r = tk.Label(frame_parametor, text="r")
 lbl_r.grid(row=1, column=0)
@@ -467,18 +500,40 @@ scl_r.set(25)
 lbl_sigma = tk.Label(frame_parametor, text="sigma")
 lbl_sigma.grid(row=2, column=0)
 
-scl_sigma = tk.Scale(frame_parametor, orient="horizontal", from_=1, to=8)
+scl_sigma = tk.Scale(frame_parametor, orient="horizontal", from_=1, to=8, resolution=0.2)
 scl_sigma.grid(row=2, column=1, sticky=tk.NSEW)
 scl_sigma.set(4)
+
+lbl_rate = tk.Label(frame_parametor, text="rate")
+lbl_rate.grid(row=3, column=0)
+
+scl_rate = tk.Scale(frame_parametor, orient="horizontal", from_=1, to=2, resolution=0.2)
+scl_rate.grid(row=3, column=1, sticky=tk.NSEW)
+scl_rate.set(1.2)
 
 frame_parametor.grid_columnconfigure(1, weight=1)
 
 canvas_dst = tk.Canvas(frame_process)
 canvas_dst.grid(row=1, column=1)
 
+# Current Image Values
+frame_values = tk.LabelFrame(root, text="Image Values")
+frame_values.grid(row=0, column=3)
+frame_values.grid_remove()
+
+canvas_hist = tk.Canvas(frame_values)
+canvas_hist.grid(row=0, column=0)
+
+canvas_spec = tk.Canvas(frame_values)
+canvas_spec.grid(row=1, column=0)
+
 # --------------------------------------------------
 # main
 FileSelect()
 cnv_img.create_image(0, 0, image=convert(img_god), anchor="nw")
+DC = np.fft.fft2(img_god)
+DC = np.fft.fftshift(DC)
+DC = 20 * np.log(np.abs(DC))
+DC_amp = DC[center, center]
 
 root.mainloop()
