@@ -95,7 +95,7 @@ def Binarization():
 
 flt_txt = ["Averaging", "Gaussian", "Prewitt", "Sobel", "Laplacian", "Sharpening",
            "LowPass", "HighPass", "BandPass", "HighEmphasis",
-           "GaussianLowPass", "GaussianHighPass", "GaussianHighEmphasis",
+           "GaussianLowPass", "GaussianHighPass", "GaussianBandPass", "GaussianHighEmphasis",
            "Resize"]
 
 def Averaging():
@@ -183,9 +183,16 @@ def GaussianHighPass():
     flt_mtr = Gaussian2D(wid, sigma)*(-1)+1
     frequency_flt(flt_mtr)
 
+def GaussianBandPass():
+    sigma = scl_sigma.get()
+    Dsigma = scl_Dsigma.get()
+    flt_mtr = Gaussian2D(wid, sigma) - Gaussian2D(wid, Dsigma)
+    frequency_flt(flt_mtr)
+
 def GaussianHighEmphasis():
     sigma = scl_sigma.get()
-    flt_mtr = Gaussian2D(wid, sigma)*(-1)+2
+    rate = 1
+    flt_mtr = rate + 1 - Gaussian2D(wid, sigma) * rate
     frequency_flt(flt_mtr)
 
 def Resize():
@@ -195,11 +202,10 @@ def Resize():
     f = np.fft.fft2(img_src)
     fshift = np.fft.fftshift(f)
     ftmp = np.full((int(wid*rate), int(wid*rate)), 0, dtype=np.complex128)
-    for i, I in enumerate(range(int(wid*(rate-1)//2), int(wid*(rate-1)//2)+wid)):
-        for j, J in enumerate(range(int(wid*(rate-1)//2), int(wid*(rate-1)//2+wid))):
-            ftmp[I][J] = fshift[i][j]
+    ftmp[int(wid*(rate-1)/2):int(wid*(rate+1)/2), int(wid*(rate-1)/2):int(wid*(rate+1)/2)] = fshift
     funshift = np.fft.fftshift(ftmp)
     img_dst = np.uint8(np.fft.ifft2(funshift).real)
+    img_dst = img_dst * (rate**2)
     cv2.imwrite("img.png", img_dst)
     wid = int(wid * rate)
     size = img_dst.shape
@@ -251,7 +257,7 @@ def Spectrum(input, output, isSpc=False):
         input = np.fft.fftshift(input)
     spc = 20 * np.log(np.abs(input))
     spc[np.isinf(spc)] = 0
-    spc = int(spc/DC_amp*256)
+    spc = spc / DC_amp * 256
     cv2.imwrite(output+".png", spc)
 
 
@@ -267,7 +273,6 @@ def convert(img_gry):
 
 
 def replace():
-    frame_process.grid()
     img_src = cv2.imread("src.png")
     img_dst = cv2.imread("dst.png")
     img_operator = cv2.imread("operator.png")
@@ -471,7 +476,6 @@ frame_buttons.grid_columnconfigure(0, weight=1)
 # Processing Detail
 frame_process = tk.LabelFrame(root, text="Proccesing Detail")
 frame_process.grid(row=0, column=2)
-frame_process.grid_remove()
 
 canvas_src = tk.Canvas(frame_process)
 canvas_src.grid(row=0, column=0)
@@ -504,11 +508,18 @@ scl_sigma = tk.Scale(frame_parametor, orient="horizontal", from_=1, to=8, resolu
 scl_sigma.grid(row=2, column=1, sticky=tk.NSEW)
 scl_sigma.set(4)
 
+lbl_Dsigma = tk.Label(frame_parametor, text="Dsigma")
+lbl_Dsigma.grid(row=3, column=0)
+
+scl_Dsigma = tk.Scale(frame_parametor, orient="horizontal", from_=1, to=8, resolution=0.2)
+scl_Dsigma.grid(row=3, column=1, sticky=tk.NSEW)
+scl_Dsigma.set(2)
+
 lbl_rate = tk.Label(frame_parametor, text="rate")
-lbl_rate.grid(row=3, column=0)
+lbl_rate.grid(row=4, column=0)
 
 scl_rate = tk.Scale(frame_parametor, orient="horizontal", from_=1, to=2, resolution=0.2)
-scl_rate.grid(row=3, column=1, sticky=tk.NSEW)
+scl_rate.grid(row=4, column=1, sticky=tk.NSEW)
 scl_rate.set(1.2)
 
 frame_parametor.grid_columnconfigure(1, weight=1)
@@ -519,7 +530,6 @@ canvas_dst.grid(row=1, column=1)
 # Current Image Values
 frame_values = tk.LabelFrame(root, text="Image Values")
 frame_values.grid(row=0, column=3)
-frame_values.grid_remove()
 
 canvas_hist = tk.Canvas(frame_values)
 canvas_hist.grid(row=0, column=0)
@@ -534,6 +544,6 @@ cnv_img.create_image(0, 0, image=convert(img_god), anchor="nw")
 DC = np.fft.fft2(img_god)
 DC = np.fft.fftshift(DC)
 DC = 20 * np.log(np.abs(DC))
-DC_amp = DC[center, center]
+DC_amp = np.max(DC)
 
 root.mainloop()
