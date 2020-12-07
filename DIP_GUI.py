@@ -172,16 +172,69 @@ def HighEmphasis():
     frequency_flt(flt_mtr)
 
 def GaussianLowPass():
-    flt_mtr = Gaussian2D(wid)
+    sigma = scl_sigma.get()
+    flt_mtr = Gaussian2D(wid, sigma)
     frequency_flt(flt_mtr)
 
 def GaussianHighPass():
-    flt_mtr = Gaussian2D(wid)*(-1)+1
+    sigma = scl_sigma.get()
+    flt_mtr = Gaussian2D(wid, sigma)*(-1)+1
     frequency_flt(flt_mtr)
 
 def GaussianHighEmphasis():
-    flt_mtr = Gaussian2D(wid)*(-1)+2
+    sigma = scl_sigma.get()
+    flt_mtr = Gaussian2D(wid, sigma)*(-1)+2
     frequency_flt(flt_mtr)
+
+# --------------------------------------------------
+# グラフ描画
+def Histgram(input, output):
+    """ヒストグラム描画/保存
+
+    input:入力画像
+    output:出力画像[ファイル名]
+    """
+    plt.figure()
+    plt.hist(input.flatten(), bins=x, color="black")
+    plt.xlim(0, 255)
+    plt.savefig(output+".png")
+    plt.close()
+
+
+def Table(input, output):
+    """表描画/保存
+
+    input:入力行列
+    output:出力画像[ファイル名]
+    """
+    fig,ax = plt.subplots()
+    ax.axis('off')
+    tb = ax.table(cellText=input, cellLoc="center", loc="center")
+    tb.auto_set_font_size(False)
+    cell_height = 1 / len(input)
+    for pos, cell in tb.get_celld().items():
+        cell.set_height(cell_height)
+    plt.savefig(output+".png")
+    plt.close()
+
+
+def Spectrum(input, output, isSpc=False):
+    """スペクトラム描画/保存
+
+    input:入力画像
+    output:出力画像[ファイル名]
+    isSpc:スペクトラム判定
+    """
+    if not(isSpc):
+        input = np.fft.fft2(input)
+        input = np.fft.fftshift(input)
+    spc = 20 * np.log(np.abs(input))
+    spc[np.isinf(spc)] = 0
+    plt.figure(dpi=1, figsize=(wid//2, wid//2))
+    plt.imshow(spc, cmap="gray")
+    plt.savefig(output+".png")
+    plt.close()
+
 
 # --------------------------------------------------
 # 関数
@@ -212,17 +265,8 @@ def ShadingConversion(tcurve):
     img_dst = cv2.LUT(img_src, tcurve)
     cv2.imwrite("img.png", img_dst)
     cnv_img.create_image(0, 0, image=convert(img_dst), anchor="nw")
-    plt.figure()
-    plt.hist(img_src.flatten(), bins=x, color="black")
-    plt.xlim(0, 255)
-    plt.savefig("src.png")
-    plt.close()
-    plt.figure()
-    plt.hist(img_dst.flatten(), bins=x, color="black")
-    plt.xlim(0, 255)
-    plt.savefig("dst.png")
-    plt.close()
-    plt.figure()
+    Histgram(img_src, "src")
+    Histgram(img_dst, "dst")
     plt.subplots_adjust(left=0.14, right=0.9, bottom=0.14, top=0.91)
     plt.plot(x, tcurve, color="red")
     plt.xlim(0, 256)
@@ -233,15 +277,7 @@ def ShadingConversion(tcurve):
 
 
 def spatial_flt(flt_ary):
-    fig,ax = plt.subplots()
-    ax.axis('off')
-    tb = ax.table(cellText=flt_ary, cellLoc="center", loc="center")
-    tb.auto_set_font_size(False)
-    cell_height = 1 / len(flt_ary)
-    for pos, cell in tb.get_celld().items():
-        cell.set_height(cell_height)
-    plt.savefig("operator.png")
-    plt.close()
+    Table(flt_ary, "operator")
     for i in range(9):
         flt_ary[i//3][i%3] = eval(flt_ary[i//3][i%3])
     flt_ary = flt_ary.astype(np.float64)
@@ -266,18 +302,8 @@ def frequency_flt(flt_mtr):
     img_dst = np.uint8(np.fft.ifft2(funshift).real)
     cv2.imwrite("img.png", img_dst)
     cnv_img.create_image(0, 0, image=convert(img_dst), anchor="nw")
-    spc_src = 20 * np.log(np.abs(fshift))
-    spc_src[np.isinf(spc_src)] = 0
-    plt.figure(dpi=1, figsize=(wid//2, wid//2))
-    plt.imshow(spc_src, cmap="gray")
-    plt.savefig("src.png")
-    plt.close()
-    spc_dst = 20 * np.log(np.abs(ftmp))
-    spc_dst[np.isinf(spc_dst)] = 0
-    plt.figure(dpi=1, figsize=(wid//2, wid//2))
-    plt.imshow(spc_dst, cmap="gray")
-    plt.savefig("dst.png")
-    plt.close()
+    Spectrum(fshift, "src", True)
+    Spectrum(ftmp, "dst", True)
     replace()
 
 
@@ -302,7 +328,7 @@ def WidgetSize(wid):
     canvas_src.configure(width=wid//2, height=wid//2)
     canvas_dst.configure(width=wid//2, height=wid//2)
     canvas_operator.configure(width=wid//2, height=wid//2)
-    frame_parameter.configure(width=wid//2, height=wid//2)
+    frame_parametor.configure(width=wid//2, height=wid//2)
 
 def PixelValue(x=16, y=16):
     img_src = cv2.imread("god.png", 0)
@@ -310,31 +336,15 @@ def PixelValue(x=16, y=16):
     src = ([[img_src[x-1][y-1], img_src[x][y-1], img_src[x+1][y-1]],
             [img_src[x-1][y  ], img_src[x][y  ], img_src[x+1][y  ]],
             [img_src[x-1][y+1], img_src[x][y+1], img_src[x+1][y+1]]])
-    fig,ax = plt.subplots()
-    ax.axis('off')
-    tb = ax.table(cellText=src, cellLoc="center", loc="center")
-    tb.auto_set_font_size(False)
-    cell_height = 1 / len(src)
-    for pos, cell in tb.get_celld().items():
-        cell.set_height(cell_height)
-    plt.savefig("src.png")
-    plt.close()
+    Table(src, "src")
     dst = ([[img_dst[x-1][y-1], img_dst[x][y-1], img_dst[x+1][y-1]],
             [img_dst[x-1][y  ], img_dst[x][y  ], img_dst[x+1][y  ]],
             [img_dst[x-1][y+1], img_dst[x][y+1], img_dst[x+1][y+1]]])
-    fig,ax = plt.subplots()
-    ax.axis('off')
-    tb = ax.table(cellText=dst, cellLoc="center", loc="center")
-    tb.auto_set_font_size(False)
-    cell_height = 1 / len(dst)
-    for pos, cell in tb.get_celld().items():
-        cell.set_height(cell_height)
-    plt.savefig("dst.png")
-    plt.close()
+    Table(dst, "dst")
 
 def Gaussian2D(width, sigma=4):
-    x = np.linspace(-15, 15, width)
-    y = np.linspace(-15, 15, width)
+    x = np.linspace(-16, 16, width)
+    y = np.linspace(-16, 16, width)
     matrix = np.full((width, width), 0, dtype=np.float64)
     for i in range(width):
         for j in range(width):
@@ -375,19 +385,8 @@ def filtering(event):
 
 def fourier(event):
     img = cv2.imread("img.png", 0)
-    f = np.fft.fft2(img)
-    fshift = np.fft.fftshift(f)
-    mag_spc = 20 * np.log(np.abs(fshift))
-    plt.figure(dpi=1, figsize=(wid//2, wid//2))
-    plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    plt.imshow(mag_spc, cmap="gray")
-    plt.xticks([])
-    plt.yticks([])
-    plt.savefig("src.png")
-    plt.close()
-    img_src = cv2.imread("src.png", 0)
-    cnv_spc.grid()
-    cnv_spc.create_image(0, 0, image=convert(img_src), anchor="nw")
+    Spectrum(img, "src")
+    replace()
 
 
 # --------------------------------------------------
@@ -446,18 +445,32 @@ canvas_src.grid(row=0, column=0)
 canvas_operator = tk.Canvas(frame_process)
 canvas_operator.grid(row=0, column=1)
 
-frame_parameter = tk.LabelFrame(frame_process, text="Proccesing Parameter")
-frame_parameter.grid(row=1, column=0)
+frame_parametor = tk.LabelFrame(frame_process, text="Proccesing Parameter")
+frame_parametor.grid(row=1, column=0)
+frame_parametor.grid_propagate(False)
 
-lbl_R = tk.Label(frame_parameter, text="R")
+lbl_R = tk.Label(frame_parametor, text="R")
+lbl_R.grid(row=0, column=0)
 
-scl_R = tk.Scale(frame_parameter, orient="horizontal", from_=0, to=255, length=230)
+scl_R = tk.Scale(frame_parametor, orient="horizontal", from_=0, to=255)
+scl_R.grid(row=0, column=1, sticky=tk.NSEW)
 scl_R.set(50)
 
-lbl_r = tk.Label(frame_parameter, text="r")
+lbl_r = tk.Label(frame_parametor, text="r")
+lbl_r.grid(row=1, column=0)
 
-scl_r = tk.Scale(frame_parameter, orient="horizontal", from_=0, to=255)
+scl_r = tk.Scale(frame_parametor, orient="horizontal", from_=0, to=255)
+scl_r.grid(row=1, column=1, sticky=tk.NSEW)
 scl_r.set(25)
+
+lbl_sigma = tk.Label(frame_parametor, text="sigma")
+lbl_sigma.grid(row=2, column=0)
+
+scl_sigma = tk.Scale(frame_parametor, orient="horizontal", from_=0, to=8)
+scl_sigma.grid(row=2, column=1, sticky=tk.NSEW)
+scl_sigma.set(4)
+
+frame_parametor.grid_columnconfigure(1, weight=1)
 
 canvas_dst = tk.Canvas(frame_process)
 canvas_dst.grid(row=1, column=1)
