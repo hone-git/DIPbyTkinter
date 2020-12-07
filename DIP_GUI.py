@@ -21,6 +21,7 @@ plt.rcParams["figure.subplot.left"] = 0
 plt.rcParams["figure.subplot.bottom"] = 0
 plt.rcParams["figure.subplot.right"] = 1
 plt.rcParams["figure.subplot.top"] = 1
+plt.rcParams["font.size"] = 16
 
 dir = expanduser("~") + "/Pictures/dipImage"
 try:
@@ -466,7 +467,7 @@ scl_r.set(25)
 lbl_sigma = tk.Label(frame_parametor, text="sigma")
 lbl_sigma.grid(row=2, column=0)
 
-scl_sigma = tk.Scale(frame_parametor, orient="horizontal", from_=0, to=8)
+scl_sigma = tk.Scale(frame_parametor, orient="horizontal", from_=1, to=8)
 scl_sigma.grid(row=2, column=1, sticky=tk.NSEW)
 scl_sigma.set(4)
 
