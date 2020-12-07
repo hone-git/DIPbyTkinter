@@ -251,7 +251,7 @@ def Spectrum(input, output, isSpc=False):
         input = np.fft.fftshift(input)
     spc = 20 * np.log(np.abs(input))
     spc[np.isinf(spc)] = 0
-    spc = spc / DC_amp * 256
+    spc = int(spc/DC_amp*256)
     cv2.imwrite(output+".png", spc)
 
 
