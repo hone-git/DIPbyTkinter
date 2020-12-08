@@ -3,15 +3,18 @@
 ! ファイルの書き込み場所は
   C:/Users/****/Pictures/dipImage
 """
+# ファイル関係
 import os
 from os.path import expanduser
-import cv2
+# 画像処理関係
 import numpy as np
+from matplotlib import pyplot as plt
+import cv2
+from PIL import Image, ImageTk
+# GUI関係
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.filedialog
-from PIL import Image, ImageTk
-from matplotlib import pyplot as plt
 
 np.seterr(divide="ignore")
 
@@ -83,7 +86,8 @@ def Posterization():
     ShadingConversion(y)
 
 def Binarization():
-    threshold = 128
+    scl_rate.configure(from_=0, to=256, resolution=1)
+    threshold = scl_rate.get()
     y = np.zeros(x.shape)
     y[threshold < x] = 255
     y = np.clip(y, 0, 255).astype(np.uint8)
@@ -353,6 +357,7 @@ def WidgetSize(wid):
     frame_parametor.configure(width=wid//2, height=wid//2)
     canvas_hist.configure(width=wid//2, height=wid//2)
     canvas_spec.configure(width=wid//2, height=wid//2)
+    frame_values.configure(height=wid)
 
 
 def PixelValue(x=16, y=16):
@@ -487,40 +492,41 @@ frame_parametor = tk.LabelFrame(frame_process, text="Proccesing Parameter")
 frame_parametor.grid(row=1, column=0)
 frame_parametor.grid_propagate(False)
 
+lbl_rate = tk.Label(frame_parametor, text="rate")
+lbl_rate.grid(row=0, column=0)
+
+scl_rate = tk.Scale(frame_parametor, orient="horizontal", from_=1, to=2, resolution=0.2)
+scl_rate.grid(row=0, column=1, sticky=tk.NSEW)
+scl_rate.set(1.2)
+
 lbl_R = tk.Label(frame_parametor, text="R")
-lbl_R.grid(row=0, column=0)
+lbl_R.grid(row=1, column=0)
 
 scl_R = tk.Scale(frame_parametor, orient="horizontal", from_=0, to=255)
-scl_R.grid(row=0, column=1, sticky=tk.NSEW)
+scl_R.grid(row=1, column=1, sticky=tk.NSEW)
 scl_R.set(75)
 
 lbl_r = tk.Label(frame_parametor, text="r")
-lbl_r.grid(row=1, column=0)
+lbl_r.grid(row=2, column=0)
 
 scl_r = tk.Scale(frame_parametor, orient="horizontal", from_=0, to=255)
-scl_r.grid(row=1, column=1, sticky=tk.NSEW)
+scl_r.grid(row=2, column=1, sticky=tk.NSEW)
 scl_r.set(25)
 
 lbl_sigma = tk.Label(frame_parametor, text="sigma")
-lbl_sigma.grid(row=2, column=0)
+lbl_sigma.grid(row=3, column=0)
 
 scl_sigma = tk.Scale(frame_parametor, orient="horizontal", from_=1, to=8, resolution=0.2)
-scl_sigma.grid(row=2, column=1, sticky=tk.NSEW)
+scl_sigma.grid(row=3, column=1, sticky=tk.NSEW)
 scl_sigma.set(4)
 
 lbl_Dsigma = tk.Label(frame_parametor, text="Dsigma")
-lbl_Dsigma.grid(row=3, column=0)
+lbl_Dsigma.grid(row=4, column=0)
 
 scl_Dsigma = tk.Scale(frame_parametor, orient="horizontal", from_=1, to=8, resolution=0.2)
-scl_Dsigma.grid(row=3, column=1, sticky=tk.NSEW)
+scl_Dsigma.grid(row=4, column=1, sticky=tk.NSEW)
 scl_Dsigma.set(2)
 
-lbl_rate = tk.Label(frame_parametor, text="rate")
-lbl_rate.grid(row=4, column=0)
-
-scl_rate = tk.Scale(frame_parametor, orient="horizontal", from_=1, to=2, resolution=0.2)
-scl_rate.grid(row=4, column=1, sticky=tk.NSEW)
-scl_rate.set(1.2)
 
 frame_parametor.grid_columnconfigure(1, weight=1)
 
@@ -545,5 +551,38 @@ DC = np.fft.fft2(img_god)
 DC = np.fft.fftshift(DC)
 DC = 20 * np.log(np.abs(DC))
 DC_amp = np.max(DC)
+
+# --------------------------------------------------
+# OCR !必要無い場合は削除推奨
+import pyocr
+import pyocr.builders
+import re
+
+path_tesseract = "C:\\Program Files (x86)\\Tesseract-OCR"
+if path_tesseract not in os.environ["PATH"].split(os.pathsep):
+    os.environ["PATH"] += os.pathsep + path_tesseract
+
+def OCR(event):
+    img = Image.open("img.png")
+    tools = pyocr.get_available_tools()
+    tool = tools[0]
+    builder_line = pyocr.builders.LineBoxBuilder(tesseract_layout=6)
+    result = tool.image_to_string(img,lang="jpn",builder=builder_line)
+    img = np.asarray(img)
+    txt_ocr.delete("1.0", "end")
+    for res in result:
+        resRegular = re.sub('([あ-んア-ン一-龥ー])\s+((?=[あ-んア-ン一-龥ー]))', r'\1\2', res.content)
+        txt_ocr.insert("end", resRegular+"\n")
+        cv2.rectangle(img, res.position[0], res.position[1], (0, 0, 255), 2)
+    cnv_img.create_image(0, 0, image=convert(img), anchor="nw")
+
+btn_ocr = tk.Button(frame_buttons, text="OCR")
+btn_ocr.grid(row=6, column=0, sticky=tk.E+tk.W)
+btn_ocr.bind("<1>", OCR)
+frame_buttons.grid_rowconfigure(6, weight=1)
+
+txt_ocr = tk.Text(root)
+txt_ocr.grid(row=0, column=4, sticky=tk.NSEW)
+# --------------------------------------------------
 
 root.mainloop()
