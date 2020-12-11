@@ -1,7 +1,7 @@
 # cording: utf-8
 """
 ! ファイルの書き込み場所は
-  C:/Users/****/Pictures/dipImage
+  ~/****/Pictures/dipImage
 """
 # ファイル関係
 import os
@@ -229,7 +229,6 @@ def Histgram(input, output):
     plt.hist(input.flatten(), bins=x, color="black")
     plt.xlim(0, 255)
     plt.savefig(output+".png")
-    plt.close()
 
 
 def Table(input, output):
@@ -246,7 +245,6 @@ def Table(input, output):
     for pos, cell in tb.get_celld().items():
         cell.set_height(cell_height)
     plt.savefig(output+".png")
-    plt.close()
 
 
 def Spectrum(input, output, isSpc=False):
@@ -294,7 +292,6 @@ def ShadingConversion(tcurve):
     plt.xlim(0, 256)
     plt.ylim(0, 256)
     plt.savefig("operator.png")
-    plt.close()
     img_src = cv2.imread("img.png", 0)
     img_dst = cv2.LUT(img_src, tcurve)
     cv2.imwrite("img.png", img_dst)
@@ -341,6 +338,9 @@ def FileSelect():
     img_god = cv2.imread(file, 0)
     wid = min(img_god.shape[0], img_god.shape[1])
     img_god = img_god[0:wid, 0:wid]
+    if wid > 512:
+        wid = 512
+        img_god = cv2.resize(img_god, (wid, wid))
     size = img_god.shape
     cv2.imwrite("god.png", img_god)
     cv2.imwrite("img.png", img_god)
@@ -557,10 +557,6 @@ DC_amp = np.max(DC)
 import pyocr
 import pyocr.builders
 import re
-
-path_tesseract = "C:\\Program Files (x86)\\Tesseract-OCR"
-if path_tesseract not in os.environ["PATH"].split(os.pathsep):
-    os.environ["PATH"] += os.pathsep + path_tesseract
 
 def OCR(event):
     img = Image.open("img.png")
