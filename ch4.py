@@ -9,7 +9,7 @@ def ShadingConversion(src, tonecurve):
     if src.color:
         src.ndarray = cv2.cvtColor(src.ndarray, cv2.COLOR_BGR2GRAY)
     dst = dip.Image()
-    dst.replace(cv2.LUT(src.ndarray, tonecurve))
+    dst.ndarray = cv2.LUT(src.ndarray, tonecurve)
     return dst
 
 

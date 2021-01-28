@@ -10,7 +10,4 @@ import ch6
 
 if __name__ == '__main__':
     first = dip.Image()
-    first.fileopen()
-
-    second = ch6.GaussianLowPass(first)
-    second.filesave()
+    print(first.ndarray)
