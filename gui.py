@@ -6,10 +6,11 @@ import tkinter.filedialog
 import dip
 import ch4
 import ch5
+import ch6
 
 if __name__ == '__main__':
     first = dip.Image()
     first.fileopen()
 
-    second = ch4.NegPosInversion(first)
+    second = ch6.GaussianLowPass(first)
     second.filesave()

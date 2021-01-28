@@ -3,13 +3,13 @@ import dip
 import numpy as np
 import cv2
 
-def Filtering(src, filter):
+def SpatialFiltering(src, filter):
     if src.color:
         src.ndarray = cv2.cvtColor(src.ndarray, cv2.COLOR_BGR2GRAY)
     tmp = dip.Image()
-    tmp.ndarray = cv2.filter2D(src.ndarray, -1, filter)
+    tmp.replace(cv2.filter2D(src.ndarray, -1, filter))
     dst = dip.Image()
-    dst.ndarray = cv2.convertScaleAbs(tmp.ndarray)
+    dst.replace(cv2.convertScaleAbs(tmp.ndarray))
     return dst
 
 
