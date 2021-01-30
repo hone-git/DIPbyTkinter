@@ -15,14 +15,9 @@ def GaussianDist(size, sigma):
 
 
 def FrequencyFiltering(src, filter):
-    try:
-        _ = src.f
-    except AttributeError:
-        src.fft()
     ftmp = src.fshift * filter
     funshift = np.fft.fftshift(ftmp)
-    dst = dip.Image()
-    dst.ndarray = np.uint8(np.fft.ifft2(funshift).real)
+    dst = dip.Imeji(np.uint8(np.fft.ifft2(funshift).real))
     return dst
 
 
