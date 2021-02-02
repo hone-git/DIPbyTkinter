@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import cv2
 from PIL import Image, ImageTk
+from scipy import signal
 # GUI関係
 import tkinter as tk
 import tkinter.filedialog
@@ -70,6 +71,8 @@ class Imeji:
 
     def convertColor(self):
         self.r, self.g, self.b = cv2.split(self.__color)
+        self.__hsv = cv2.cvtColor(self.__color, cv2.COLOR_RGB2HSV)
+        self.h, self.s, self.v = cv2.split(self.__hsv)
 
     def convertForm(self):
         self.__pil = Image.fromarray(self.__color)
@@ -84,4 +87,9 @@ class Imeji:
 
 if __name__ == '__main__':
     first = Imeji()
-    print(first.gray)
+
+    wie = signal.wiener(first.gray).astype(np.uint8)
+    print(wie)
+    cv2.imshow("test", wie)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
