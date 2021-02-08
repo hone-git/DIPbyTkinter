@@ -3,6 +3,14 @@ import dip
 import numpy as np
 import cv2
 
+#processes = ['LineToneCurve', 'GammaToneCurve',
+#             'SToneCurveSin', 'HistEqualize', 'NegPosInversion',
+#             'Solarization', 'Posterization', 'Binarization',
+#             'SolarizationColor', 'LineToneCurveRGB', 'PseudoColor',
+#             'LineToneCurveHSV', 'Emboss', 'AlphaBlending']
+
+processes = []
+
 x = np.arange(256)
 
 def ShadingConversion(src, tonecurve):
@@ -15,6 +23,7 @@ def LineToneCurve(image, n=2.0):
     y = np.clip(y, 0, 255).astype(np.uint8)
     return ShadingConversion(image, y)
 
+processes.append(dip.Shori("LineToneCurve", LineToneCurve, {"n":(0, 4.0, 0.1)}))
 
 def GammaToneCurve(image, gamma=2.0):
     y = 255 * (x/255) ** (1/gamma)

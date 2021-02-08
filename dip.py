@@ -85,6 +85,12 @@ class Imeji:
         self.spectrum[np.isinf(self.spectrum)] = 0
 
 
+class Shori:
+    def __init__(self, name, process, params={}):
+        self.name = name
+        self.process = process
+        self.params = params
+
 if __name__ == '__main__':
     first = Imeji()
 

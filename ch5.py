@@ -3,6 +3,10 @@ import dip
 import numpy as np
 import cv2
 
+processes = ['Averaging', 'Gaussian', 'DirectionAveraging',
+             'Derivative', 'Prewitt', 'Sobel', 'Laplacian', 'Sharpening',
+             'kNNAveraging', 'Bilateral', 'NLMean', 'Median']
+
 def SpatialFiltering(src, filter):
     tmp = cv2.filter2D(src.color, -1, filter)
     dst = dip.Imeji(cv2.convertScaleAbs(tmp))
@@ -92,7 +96,7 @@ def Sobel(image, direction='horizontal'):
     return SpatialFiltering(image, filter)
 
 
-def Laplacian(image, direction=4):
+def Laplacian(image, direction=8):
     if direction == 4:
         filter = np.array([[0,  1, 0],
                            [1, -4, 1],
@@ -132,12 +136,12 @@ def kNNAveraging(image, k=3, scale=3):
 
 
 def Bilateral(image, d=15, sigmaColor=50, sigmaSpace=50):
-    dst = dip.Imeji(cv2.bilateralFilter(image, d, sigmaColor, sigmaSpace))
+    dst = dip.Imeji(cv2.bilateralFilter(image.color, d, sigmaColor, sigmaSpace))
     return dst
 
 
 def NLMean(image, h=10, hColor=10, templateWS=7, searchWS=21):
-    dst = dip.Imeji(cv2.fastNLMeansDenoisingColored(image, None, h, hColor, templateWS, searchWS))
+    dst = dip.Imeji(cv2.fastNlMeansDenoisingColored(image.color, None, h, hColor, templateWS, searchWS))
     return dst
 
 
