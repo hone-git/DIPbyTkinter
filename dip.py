@@ -16,9 +16,9 @@ class Imeji:
         if type(img) == str:
             self.openfile(img)
         elif type(img) == np.ndarray:
-            self.__color = img
             if img.shape[-1] == 3:
-                self.__gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                self.__color = img
+                self.__gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
             else:
                 self.__gray = img
         else:
@@ -26,20 +26,100 @@ class Imeji:
         self.measure()
 
     @property
-    def color(self):
-        return self.__color
-
-    @property
     def gray(self):
         return self.__gray
+
+    @property
+    def color(self):
+        try:
+            return self.__color
+        except AttributeError:
+            print("This Imeji don't has color. return gray")
+            return self.__gray
+
+    @property
+    def r(self):
+        try:
+            return self.__r
+        except AttributeError:
+            self.r, self.g, self.b = cv2.split(self.__color)
+            return self.__r
+
+    @property
+    def g(self):
+        try:
+            return self.__g
+        except AttributeError:
+            self.r, self.g, self.b = cv2.split(self.__color)
+            return self.__g
+
+    @property
+    def b(self):
+        try:
+            return self.__b
+        except AttributeError:
+            self.r, self.g, self.b = cv2.split(self.__color)
+            return self.__b
+
+    @property
+    def hsv(self):
+        try:
+            return self.__hsv
+        except AttributeError:
+            self.__hsv = cv2.cvtColor(self.__color, cv2.COLOR_RGB2HSV)
+            return self.__hsv
+
+    @property
+    def h(self):
+        try:
+            return self.__h
+        except AttributeError:
+            self.h, self.s, self.v = cv2.split(self.__hsv)
+            return self.__h
+
+    @property
+    def s(self):
+        try:
+            return self.__s
+        except AttributeError:
+            self.h, self.s, self.v = cv2.split(self.__hsv)
+            return self.__s
+
+    @property
+    def v(self):
+        try:
+            return self.__v
+        except AttributeError:
+            self.h, self.s, self.v = cv2.split(self.__hsv)
+            return self.__v
+
+    @property
+    def pil(self):
+        try:
+            return self.__pil
+        except AttributeError:
+            self.__pil = Image.fromarray(self.__color)
+            return self.__pil
 
     @property
     def tk(self):
         try:
             return self.__tk
         except AttributeError:
-            self.convertForm()
+            try:
+                self.__tk = ImageTk.PhotoImage(self.__pil)
+            except AttributeError:
+                self.__pil = Image.fromarray(self.__color)
+                self.__tk = ImageTk.PhotoImage(self.__pil)
             return self.__tk
+
+    @property
+    def f(self):
+        try:
+            return self.__f
+        except AttributeError:
+            self.__f = np.fft.fft2(self.__color)
+            return self.__f
 
     @property
     def fshift(self):
@@ -64,19 +144,10 @@ class Imeji:
         cv2.imwrite(file, tmp)
 
     def measure(self):
-        self.height = self.__color.shape[0]
-        self.width = self.__color.shape[1]
+        self.height = self.__gray.shape[0]
+        self.width = self.__gray.shape[1]
         self.size = (self.height, self.width)
         self.center = (self.height//2, self.width//2)
-
-    def convertColor(self):
-        self.r, self.g, self.b = cv2.split(self.__color)
-        self.__hsv = cv2.cvtColor(self.__color, cv2.COLOR_RGB2HSV)
-        self.h, self.s, self.v = cv2.split(self.__hsv)
-
-    def convertForm(self):
-        self.__pil = Image.fromarray(self.__color)
-        self.__tk = ImageTk.PhotoImage(self.__pil)
 
     def fft(self):
         self.__f = np.fft.fft2(self.__color)
