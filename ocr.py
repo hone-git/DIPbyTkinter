@@ -18,4 +18,4 @@ def Tesseract(image):
     for r in result:
         cv2.rectangle(result_image, r.position[0], r.position[1], (0, 0, 255), 2)
     dst = dip.Imeji(result_image)
-    return result, dst
+    return dst

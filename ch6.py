@@ -3,6 +3,10 @@ import dip
 import numpy as np
 import cv2
 
+processes = ['LowPass', 'HighPass', 'BandPass', 'HighEmphasis',
+             'GaussianLowPass', 'GaussianHighPass',
+             'GaussianBandPass', 'GaussianHighEmphasis']
+
 def GaussianDist(size, sigma):
     x = np.linspace(-16, 16, size[0])
     y = np.linspace(-16, 16, size[1])

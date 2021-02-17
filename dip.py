@@ -16,8 +16,8 @@ class Imeji:
         if type(img) == str:
             self.openfile(img)
         elif type(img) == np.ndarray:
+            self.__color = img
             if img.shape[-1] == 3:
-                self.__color = img
                 self.__gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
             else:
                 self.__gray = img
@@ -31,11 +31,7 @@ class Imeji:
 
     @property
     def color(self):
-        try:
-            return self.__color
-        except AttributeError:
-            print("This Imeji don't has color. return gray")
-            return self.__gray
+        return self.__color
 
     @property
     def r(self):

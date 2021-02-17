@@ -3,13 +3,11 @@ import dip
 import numpy as np
 import cv2
 
-#processes = ['LineToneCurve', 'GammaToneCurve',
-#             'SToneCurveSin', 'HistEqualize', 'NegPosInversion',
-#             'Solarization', 'Posterization', 'Binarization',
-#             'SolarizationColor', 'LineToneCurveRGB', 'PseudoColor',
-#             'LineToneCurveHSV', 'Emboss', 'AlphaBlending']
-
-processes = []
+processes = ['LineToneCurve', 'GammaToneCurve',
+             'SToneCurveSin', 'HistEqualize', 'NegPosInversion',
+             'Solarization', 'Posterization', 'Binarization',
+             'SolarizationColor', 'LineToneCurveRGB', 'PseudoColor',
+             'LineToneCurveHSV', 'Emboss', 'AlphaBlending']
 
 x = np.arange(256)
 
@@ -23,7 +21,6 @@ def LineToneCurve(image, n=2.0):
     y = np.clip(y, 0, 255).astype(np.uint8)
     return ShadingConversion(image, y)
 
-processes.append(dip.Shori("LineToneCurve", LineToneCurve, {"n":(0, 4.0, 0.1)}))
 
 def GammaToneCurve(image, gamma=2.0):
     y = 255 * (x/255) ** (1/gamma)
@@ -69,7 +66,7 @@ def Posterization(image, L=6):
     return ShadingConversion(image, y)
 
 
-def Binarization(image, thrreshold=128):
+def Binarization(image, threshold=128):
     y = np.zeros(x.shape)
     y[threshold<x] = 255
     y = np.clip(y, 0, 255).astype(np.uint8)
