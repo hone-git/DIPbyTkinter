@@ -9,6 +9,16 @@ import ch5
 import ch6
 import ocr
 
+class Garbage:
+    def __init__(self, imeji, process, parent):
+        self.imeji = imeji
+        self.parent = parent
+        self.labelMake(process)
+
+    def labelMake(self, process):
+        self.label = tk.Label(tree, text=process)
+        self.label.grid(row=0, column=0)
+
 def selectChapter(event):
     chapter = chapter_box.get()
     process_box.configure(values=eval(chapter).processes)
@@ -38,10 +48,7 @@ if __name__ == '__main__':
     chapter = chapters[0]
     process = ""
 
-    tree_row = 0
-
-    garbage = []
-    node = (0,)
+    collection = []
 
     root = tk.Tk()
     root.title("dip")
@@ -63,8 +70,10 @@ if __name__ == '__main__':
 
     first = dip.Imeji()
     first.savefile()
-    garbage.append([first, []])
     canvas.create_image(0, 0, image=first.tk, anchor='nw')
     canvas.configure(width=first.width, height=first.height)
+
+    collection.append(Garbage(first, "OpenFile", None))
+    current_image = first
 
     root.mainloop()

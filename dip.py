@@ -161,6 +161,8 @@ class Shori:
 if __name__ == '__main__':
     first = Imeji()
 
+    print(first.gray)
+
     wie = signal.wiener(first.gray).astype(np.uint8)
     print(wie)
     cv2.imshow("test", wie)
